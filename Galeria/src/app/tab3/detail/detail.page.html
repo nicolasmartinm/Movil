@@ -12,12 +12,6 @@
 
 <ion-content>
   <ion-card>
-    <!-- <ion-card-header>
-      <ion-card-title>
-        <div *ngIf="!isEditingTitle" (dblclick)="enableEditTitle()">{{ title }}</div>
-        <ion-input *ngIf="isEditingTitle" [(ngModel)]="title" (blur)="saveTitle()" autofocus></ion-input>
-      </ion-card-title>
-    </ion-card-header> -->
     <ion-card-content>
       <div *ngIf="!isEditingDescription" (dblclick)="enableEditDescription()">{{ description }}</div>
       <ion-textarea *ngIf="isEditingDescription" [(ngModel)]="description" (blur)="saveDescription()" (keyup.enter)="saveDescription()" autofocus></ion-textarea>

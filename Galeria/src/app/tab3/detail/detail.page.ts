@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
-import { PhotoService, UserPhoto } from '../../services/photo.service';
+import { AlertController, ActionSheetController, ModalController } from '@ionic/angular';
 import { getDatabase, ref, onValue, update } from 'firebase/database';
+import { PhotoService, UserPhoto } from '../../services/photo.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonicModule, AlertController, ActionSheetController, ModalController } from '@ionic/angular';
+import { IonicModule } from '@ionic/angular';
 import { PhotoViewerComponent } from '../../components/photo-viewer/photo-viewer.component';
 
 @Component({
@@ -12,7 +13,7 @@ import { PhotoViewerComponent } from '../../components/photo-viewer/photo-viewer
   templateUrl: './detail.page.html',
   styleUrls: ['./detail.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, PhotoViewerComponent]
+  imports: [CommonModule, FormsModule, IonicModule]
 })
 export class DetailPage implements OnInit {
   photos: UserPhoto[] = [];
@@ -135,10 +136,14 @@ export class DetailPage implements OnInit {
   }
 
   async saveTitle() {
-    this.isEditingTitle = false;
-    const db = getDatabase();
-    const listRef = ref(db, `infos/${this.listId}`);
-    await update(listRef, { info_title: this.title });
+    if (this.listId && this.title) {
+      this.isEditingTitle = false;
+      const db = getDatabase();
+      const listRef = ref(db, `infos/${this.listId}`);
+      await update(listRef, { info_title: this.title });
+    } else {
+      console.error('listId or title is undefined');
+    }
   }
 
   enableEditDescription() {
@@ -146,9 +151,13 @@ export class DetailPage implements OnInit {
   }
 
   async saveDescription() {
-    this.isEditingDescription = false;
-    const db = getDatabase();
-    const listRef = ref(db, `infos/${this.listId}`);
-    await update(listRef, { info_description: this.description });
+    if (this.listId && this.description) {
+      this.isEditingDescription = false;
+      const db = getDatabase();
+      const listRef = ref(db, `infos/${this.listId}`);
+      await update(listRef, { info_description: this.description });
+    } else {
+      console.error('listId or description is undefined');
+    }
   }
 }
