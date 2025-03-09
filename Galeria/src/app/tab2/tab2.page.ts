@@ -6,6 +6,7 @@ import { IonicModule, AlertController, ActionSheetController, ModalController } 
 import { getDatabase, onValue, ref } from 'firebase/database';
 import { Router } from '@angular/router';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { PhotoViewerModule } from '../components/photo-viewer/photo-viewer.module';
 import { PhotoViewerComponent } from '../components/photo-viewer/photo-viewer.component';
 
 @Component({
@@ -13,7 +14,7 @@ import { PhotoViewerComponent } from '../components/photo-viewer/photo-viewer.co
   templateUrl: './tab2.page.html',
   styleUrls: ['./tab2.page.scss'],
   standalone: true,
-  imports: [CommonModule, FormsModule, IonicModule, PhotoViewerComponent]
+  imports: [CommonModule, FormsModule, IonicModule, PhotoViewerModule]
 })
 export class Tab2Page implements OnInit {
   public lists: { id: string, name: string, description: string }[] = [];
