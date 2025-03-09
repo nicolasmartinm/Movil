@@ -1,4 +1,10 @@
 import { Component } from '@angular/core';
+import { initializeApp } from 'firebase/app';
+
+const firebaseConfig = {
+  apiKey: 'FIREBASE_WEB_APIKEY',
+  databaseURL: 'https://carpetas-22bc3-default-rtdb.firebaseio.com/',
+};
 
 @Component({
   selector: 'app-root',
@@ -6,6 +12,11 @@ import { Component } from '@angular/core';
   styleUrls: ['app.component.scss'],
   standalone: false,
 })
+
 export class AppComponent {
-  constructor() {}
+  constructor() {
+
+    initializeApp(firebaseConfig);
+
+  }
 }
