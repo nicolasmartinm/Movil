@@ -1,146 +1,148 @@
 import { Injectable } from '@angular/core';
+import { Preferences } from '@capacitor/preferences';
 import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Preferences } from '@capacitor/preferences';
 import { Platform } from '@ionic/angular';
-import { Capacitor } from '@capacitor/core';
+import { getDatabase, onValue, ref, set } from 'firebase/database';
+
+export interface UserPhoto {
+  filepath: string;
+  webviewPath: string;
+}
 
 @Injectable({
   providedIn: 'root'
 })
 export class PhotoService {
-  
   public photos: UserPhoto[] = [];
   private PHOTO_STORAGE: string = 'photos';
-  private platform: Platform;
+  private LIST_PHOTOS_STORAGE: string = 'listPhotos';
+  public selectedListPhotos: { [key: string]: UserPhoto[] } = {}; // Store photos for each list
+  public lists: { id: string, name: string }[] = [];
 
-  private async savePicture(photo: Photo) {
-
-    const base64Data = await this.readAsBase64(photo);
-
-  // Write the file to the data directory
-  const fileName = Date.now() + '.jpeg';
-  const savedFile = await Filesystem.writeFile({
-    path: fileName,
-    data: base64Data,
-    directory: Directory.Data
-  }); 
-  
-  if (this.platform.is('hybrid')){
-    return{
-      filepath: savedFile.uri,
-      webviewPath: Capacitor.convertFileSrc(savedFile.uri),
-    };
-  }
-  else{
-
-  return {
-    filepath: fileName,
-    webviewPath: photo.webPath
-  };
-   }
+  constructor(private platform: Platform) {
+    this.loadLists();
+    this.loadSaved();
   }
 
-   private async readAsBase64(photo: Photo) {
-
-     // "hybrid" will detect Cordova or Capacitor
-  if (this.platform.is('hybrid')) {
-    // Read the file into base64 format
-    const file = await Filesystem.readFile({
-      path: photo.path!
+  private loadLists() {
+    const db = getDatabase();
+    const listsRef = ref(db, 'infos/');
+    onValue(listsRef, (snapshot) => {
+      this.lists = [];
+      snapshot.forEach((childSnapshot) => {
+        this.lists.push({
+          id: childSnapshot.key,
+          name: childSnapshot.val().info_title // Use info_title as the name
+        });
+      });
+      console.log('Lists loaded:', this.lists); // Debugging line
+    }, {
+      onlyOnce: false
     });
-
-    return file.data;
   }
-  else {
-    // Fetch the photo, read as a blob, then convert to base64 format
-    const response = await fetch(photo.webPath!);
-    const blob = await response.blob();
-  
-    return await this.convertBlobToBase64(blob) as string;
-  }
-}
-  
-  private convertBlobToBase64 = (blob: Blob) => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => {
-        resolve(reader.result);
-    };
-    reader.readAsDataURL(blob);
-  });
 
   public async addNewToGallery() {
-    
     const capturedPhoto = await Camera.getPhoto({
       resultType: CameraResultType.Uri,
       source: CameraSource.Camera,
       quality: 100
     });
 
-    const savedImageFile:any = await this.savePicture(capturedPhoto);
+    const savedImageFile = await this.savePicture(capturedPhoto);
     this.photos.unshift(savedImageFile);
-
-    this.photos.unshift({
-      filepath: "soon...",
-      webviewPath: capturedPhoto.webPath!
-    });
 
     Preferences.set({
       key: this.PHOTO_STORAGE,
       value: JSON.stringify(this.photos),
     });
-
   }
 
+  private async savePicture(photo: Photo) {
+    const base64Data = await this.readAsBase64(photo);
+
+    const fileName = new Date().getTime() + '.jpeg';
+    const savedFile = await Filesystem.writeFile({
+      path: fileName,
+      data: base64Data,
+      directory: Directory.Data
+    });
+
+    return {
+      filepath: fileName,
+      webviewPath: photo.webPath || '' // Ensure webviewPath is always a string
+    };
+  }
+
+  private async readAsBase64(photo: Photo) {
+    if (this.platform.is('hybrid')) {
+      const file = await Filesystem.readFile({
+        path: photo.path!
+      });
+      return file.data;
+    } else {
+      const response = await fetch(photo.webPath!);
+      const blob = await response.blob();
+      return await this.convertBlobToBase64(blob) as string;
+    }
+  }
+
+  private convertBlobToBase64 = (blob: Blob) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+    reader.readAsDataURL(blob);
+  });
+
   public async loadSaved() {
-    // Retrieve cached photo array data
     const { value } = await Preferences.get({ key: this.PHOTO_STORAGE });
     this.photos = (value ? JSON.parse(value) : []) as UserPhoto[];
+
+    const listPhotosValue = localStorage.getItem(this.LIST_PHOTOS_STORAGE);
+    this.selectedListPhotos = listPhotosValue ? JSON.parse(listPhotosValue) : {};
+
     if (!this.platform.is('hybrid')) {
-    for (let photo of this.photos) {
-      // Read each saved photo's data from the Filesystem
-      const readFile = await Filesystem.readFile({
-        path: photo.filepath,
-        directory: Directory.Data,
-      });
-    
-      // Web platform only: Load the photo as base64 data
-      photo.webviewPath = `data:image/jpeg;base64,${readFile.data}`;
+      for (let photo of this.photos) {
+        const readFile = await Filesystem.readFile({
+          path: photo.filepath,
+          directory: Directory.Data,
+        });
+
+        photo.webviewPath = `data:image/jpeg;base64,${readFile.data}`;
+      }
     }
-    }
-    
+  }
+
+  public async saveListPhotos() {
+    localStorage.setItem(this.LIST_PHOTOS_STORAGE, JSON.stringify(this.selectedListPhotos));
   }
 
   public async deletePicture(photo: UserPhoto, position: number) {
-    // Remove this photo from the Photos reference data array
     this.photos.splice(position, 1);
-  
-    // Update photos array cache by overwriting the existing photo array
+
     Preferences.set({
       key: this.PHOTO_STORAGE,
       value: JSON.stringify(this.photos)
     });
-  
-    // delete photo file from filesystem
+
     const filename = photo.filepath.slice(photo.filepath.lastIndexOf('/') + 1);
-    
-  
     await Filesystem.deleteFile({
       path: filename,
       directory: Directory.Data
-      
     });
   }
 
+  public async addPhotoToList(photo: UserPhoto, listId: string) {
+    if (!this.selectedListPhotos[listId]) {
+      this.selectedListPhotos[listId] = [];
+    }
+    this.selectedListPhotos[listId].push(photo);
+    await this.saveListPhotos();
+  }
 
-
-  constructor(platform: Platform) {
-    this.platform = platform;
-   }
-}
-
-export interface UserPhoto {
-  filepath: string;
-  webviewPath?: string;
+  public getPhotoStorageKey(): string {
+    return this.PHOTO_STORAGE;
+  }
 }

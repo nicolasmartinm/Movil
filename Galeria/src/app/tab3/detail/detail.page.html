@@ -1,18 +1,38 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/tab3.page"></ion-back-button>
+      <ion-back-button defaultHref="/tab3"></ion-back-button>
     </ion-buttons>
     <ion-title>Info Details</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content padding>
+<ion-content>
   <ion-card>
     <ion-card-content>
       <ion-card-title>{{info.info_title}}</ion-card-title>
-
       <p>{{info.info_description}}</p>
     </ion-card-content>
   </ion-card>
+
+  <ion-grid>
+    <ion-row>
+      <ion-col size="6" size-md="4" size-lg="3" *ngFor="let photo of getPhotosForList(info.id)">
+        <ion-card>
+          <ion-img [src]="photo.webviewPath" class="photo-img" (click)="showActionSheet(photo)"></ion-img>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 </ion-content>
+
+<style>
+.photo-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  margin-bottom: 10px; /* Espacio entre las fotos */
+  border-radius: 10px; /* Bordes redondeados */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para las fotos */
+}
+</style>

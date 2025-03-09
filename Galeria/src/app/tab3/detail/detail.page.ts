@@ -1,40 +1,76 @@
 import { Component, OnInit } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
-import { DataSnapshot, getDatabase, onValue, ref } from "firebase/database";
-
-const db = getDatabase();
+import { ActivatedRoute } from '@angular/router';
+import { PhotoService, UserPhoto } from '../../services/photo.service';
+import { getDatabase, ref, onValue } from 'firebase/database';
+import { IonicModule, ActionSheetController } from '@ionic/angular';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterModule } from '@angular/router';
 
 @Component({
   selector: 'app-detail',
   templateUrl: './detail.page.html',
   styleUrls: ['./detail.page.scss'],
-  standalone: false,
+  standalone: true,
+  imports: [IonicModule, CommonModule, FormsModule, RouterModule]
 })
-
-
-
 export class DetailPage implements OnInit {
+  public info: { id: string, info_title: string, info_description: string } = { id: '', info_title: '', info_description: '' };
+  listId: string | null = null;
 
-  info: any = {};
+  constructor(private route: ActivatedRoute, private photoService: PhotoService, private actionSheetController: ActionSheetController) { }
 
-  constructor(
-    private route: ActivatedRoute,
-    public router: Router
-  ) { 
-    const infoRef = ref(db, 'infos/' + this.route.snapshot.paramMap.get('id'));
+  ngOnInit() {
+    this.listId = this.route.snapshot.paramMap.get('id');
+    if (this.listId) {
+      this.loadInfo(this.listId);
+    }
+  }
+
+  loadInfo(id: string) {
+    const db = getDatabase();
+    const infoRef = ref(db, 'infos/' + id);
     onValue(infoRef, (snapshot) => {
       const data = snapshot.val();
-      this.info = snapshotToObject(snapshot);
+      this.info = {
+        id: id,
+        info_title: data.info_title,
+        info_description: data.info_description
+      };
     });
   }
 
-  ngOnInit() {
+  getPhotosForList(listId: string): UserPhoto[] {
+    return this.photoService.selectedListPhotos[listId] || [];
   }
 
-}
-export const snapshotToObject = (snapshot: DataSnapshot) => {
-  let item = snapshot.val();
-  item.key = snapshot.key;
+  async showActionSheet(photo: UserPhoto) {
+    const actionSheet = await this.actionSheetController.create({
+      header: 'Photo Options',
+      buttons: [
+        {
+          text: 'Delete',
+          role: 'destructive',
+          icon: 'trash',
+          handler: () => {
+            this.deletePhoto(photo);
+          }
+        },
+        {
+          text: 'Cancel',
+          role: 'cancel'
+        }
+      ]
+    });
+    await actionSheet.present();
+  }
 
-  return item;
+  deletePhoto(photo: UserPhoto) {
+    const listId = this.info.id;
+    const photoIndex = this.photoService.selectedListPhotos[listId].indexOf(photo);
+    if (photoIndex > -1) {
+      this.photoService.selectedListPhotos[listId].splice(photoIndex, 1);
+      this.photoService.saveListPhotos();
+    }
+  }
 }

@@ -1,33 +1,132 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-title>
-      Info List
+      Lists
     </ion-title>
     <ion-buttons slot="end">
-      <ion-button routerLink="/create"><ion-icon name="add-circle"></ion-icon></ion-button>
-
+      <ion-button (click)="toggleView()">
+        <ion-icon [name]="isGridView ? 'list' : 'grid'"></ion-icon>
+      </ion-button>
     </ion-buttons>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
-  <ion-list>
-      <ion-item-sliding *ngFor="let info of infos">
-        <ion-item detail lines="full" [routerLink]="['/detail', {id:info.id}]">
-          <ion-icon name="desktop" slot="start"></ion-icon>
-          {{info.info_title}}
-        </ion-item>
-        <ion-item-options side="end">
-          <ion-item-option color="primary" (click)="edit(info.id)">EDIT</ion-item-option>
-          <ion-item-option color="danger" (click)="delete(info.id)">DELETE</ion-item-option>
-        </ion-item-options> 
+  <ion-grid *ngIf="isGridView">
+    <ion-row>
+      <ion-col size="12" size-md="6" size-lg="4" *ngFor="let list of lists">
+        <ion-card>
+          <ion-card-header>
+            <ion-card-title>{{list.name}}</ion-card-title>
+          </ion-card-header>
+          <ion-card-content>
+            <p>{{list.description}}</p>
+            <div class="photo-grid">
+              <div class="photo-container" *ngFor="let photo of getPhotosForList(list.id)">
+                <ion-img [src]="photo.webviewPath" class="photo-img"></ion-img>
+              </div>
+            </div>
+          </ion-card-content>
+          <ion-button fill="clear" slot="end" (click)="goToDetail(list.id)">
+            <ion-icon slot="icon-only" name="arrow-forward"></ion-icon>
+          </ion-button>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
 
-      </ion-item-sliding>
+  <ion-list *ngIf="!isGridView">
+    <ion-item *ngFor="let list of lists">
+      <div class="list-content">
+        <ion-label class="list-info">
+          <h2>{{list.name}}</h2>
+          <p>{{list.description}}</p>
+        </ion-label>
+        <ng-container *ngIf="getFirstPhoto(list.id)">
+          <div class="list-images">
+            <ion-thumbnail class="list-thumbnail">
+              <ion-img [src]="getFirstPhoto(list.id)" class="list-photo-img"></ion-img>
+            </ion-thumbnail>
+          </div>
+        </ng-container>
+        <div class="list-empty"></div>
+        <ion-button fill="clear" class="list-button" (click)="goToDetail(list.id)">
+          <ion-icon slot="icon-only" name="arrow-forward"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" class="list-button" (click)="delete(list.id)">
+          <ion-icon slot="icon-only" name="trash"></ion-icon>
+        </ion-button>
+        <ion-button fill="clear" class="list-button" (click)="editList(list.id)">
+          <ion-icon slot="icon-only" name="create"></ion-icon>
+        </ion-button>
+      </div>
+    </ion-item>
   </ion-list>
-  <ion-header collapse="condense">
-    <ion-toolbar>
-      <ion-title size="large">Blank</ion-title>
-    </ion-toolbar>
-  </ion-header>
-  
+
+  <ion-fab vertical="bottom" horizontal="center" slot="fixed">
+    <ion-fab-button (click)="addNewList()">
+      <ion-icon name="add"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
 </ion-content>
+
+<style>
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.photo-container {
+  width: 100%;
+  padding-top: 100%; /* Mantener la proporción cuadrada */
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px; /* Bordes redondeados */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para las fotos */
+}
+
+.list-content {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.list-info {
+  flex: 0 0 20%;
+}
+
+.list-images {
+  flex: 0 0 30%;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.list-empty {
+  flex: 0 0 30%;
+}
+
+.list-button {
+  flex: 0 0 20%;
+}
+
+.list-photo-img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  border-radius: 10px; /* Bordes redondeados */
+  margin-right: 10px; /* Espacio entre la imagen y el texto */
+}
+</style>
+
+
+
