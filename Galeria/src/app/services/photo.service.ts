@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Preferences } from '@capacitor/preferences';
-import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
+import { Camera, CameraResultType, CameraSource, Photo, PermissionStatus } from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Platform } from '@ionic/angular';
 import { getDatabase, onValue, ref } from 'firebase/database';
@@ -42,33 +42,81 @@ export class PhotoService {
     });
   }
 
+  private async checkCameraPermissions(): Promise<PermissionStatus> {
+    const status = await Camera.checkPermissions();
+    console.log('Camera permissions:', status);
+    return status;
+  }
+
   public async addNewToGallery() {
-    const capturedPhoto = await Camera.getPhoto({
-      resultType: CameraResultType.Uri,
-      source: CameraSource.Camera,
-      quality: 100
-    });
+    const permissions = await this.checkCameraPermissions();
 
-    const savedImageFile = await this.savePicture(capturedPhoto);
-    this.photos.unshift(savedImageFile);
-
-    try {
-      await Preferences.set({
-        key: this.PHOTO_STORAGE,
-        value: JSON.stringify(this.photos),
+    if (permissions.camera === 'granted' && permissions.photos === 'granted') {
+      const capturedPhoto = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Camera,
+        quality: 100
       });
-    } catch (e) {
-      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
-        // Clear storage and try again
-        await this.clearStorage();
-        this.photos.unshift(savedImageFile);
+
+      const savedImageFile = await this.savePicture(capturedPhoto);
+      this.photos.unshift(savedImageFile);
+
+      try {
         await Preferences.set({
           key: this.PHOTO_STORAGE,
           value: JSON.stringify(this.photos),
         });
-      } else {
-        throw e;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          // Clear storage and try again
+          await this.clearStorage();
+          this.photos.unshift(savedImageFile);
+          await Preferences.set({
+            key: this.PHOTO_STORAGE,
+            value: JSON.stringify(this.photos),
+          });
+        } else {
+          throw e;
+        }
       }
+    } else {
+      console.error('Permissions not granted');
+    }
+  }
+
+  public async addPhotoFromGallery() {
+    const permissions = await this.checkCameraPermissions();
+
+    if (permissions.photos === 'granted') {
+      const selectedPhoto = await Camera.getPhoto({
+        resultType: CameraResultType.Uri,
+        source: CameraSource.Photos,
+        quality: 100
+      });
+
+      const savedImageFile = await this.savePicture(selectedPhoto);
+      this.photos.unshift(savedImageFile);
+
+      try {
+        await Preferences.set({
+          key: this.PHOTO_STORAGE,
+          value: JSON.stringify(this.photos),
+        });
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+          // Clear storage and try again
+          await this.clearStorage();
+          this.photos.unshift(savedImageFile);
+          await Preferences.set({
+            key: this.PHOTO_STORAGE,
+            value: JSON.stringify(this.photos),
+          });
+        } else {
+          throw e;
+        }
+      }
+    } else {
+      console.error('Permissions not granted');
     }
   }
 

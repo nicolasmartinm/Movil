@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { ModalController, IonicModule } from '@ionic/angular';
-import { UserPhoto } from '../../services/photo.service';
+import { UserPhoto, PhotoService } from '../../services/photo.service';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -14,7 +14,7 @@ export class PhotoViewerComponent {
   @Input() photos: UserPhoto[] = [];
   @Input() currentIndex: number = 0;
 
-  constructor(private modalController: ModalController) {}
+  constructor(private modalController: ModalController, private photoService: PhotoService) {}
 
   close() {
     this.modalController.dismiss();
@@ -34,5 +34,13 @@ export class PhotoViewerComponent {
 
   get currentPhoto() {
     return this.photos[this.currentIndex];
+  }
+
+  addPhotoToGallery() {
+    this.photoService.addNewToGallery();
+  }
+
+  addPhotoFromGallery() {
+    this.photoService.addPhotoFromGallery();
   }
 }

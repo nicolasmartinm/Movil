@@ -16,6 +16,8 @@
     <ion-button fill="clear" class="nav-button next" (click)="next()" [disabled]="currentIndex === photos.length - 1">
       <ion-icon name="arrow-forward-circle"></ion-icon>
     </ion-button>
+    <button (click)="addPhotoToGallery()">Add Photo</button>
+    <button (click)="addPhotoFromGallery()">Add from Gallery</button>
   </div>
 </ion-content>
 
