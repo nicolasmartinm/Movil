@@ -3,9 +3,10 @@ import { PhotoService, UserPhoto } from '../services/photo.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonicModule, AlertController, ActionSheetController, ModalController } from '@ionic/angular';
-import { PhotoViewerComponent } from '../components/photo-viewer/photo-viewer.component';
 import { getDatabase, onValue, ref } from 'firebase/database';
 import { Router } from '@angular/router';
+import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { PhotoViewerComponent } from '../components/photo-viewer/photo-viewer.component';
 
 @Component({
   selector: 'app-tab2',
@@ -61,6 +62,17 @@ export class Tab2Page implements OnInit {
     this.photos = this.photoService.getPhotos(); // Update the photos array after adding a new photo
   }
 
+  async selectExistingPhoto() {
+    const capturedPhoto = await Camera.getPhoto({
+      resultType: CameraResultType.Uri,
+      source: CameraSource.Photos,
+      quality: 100
+    });
+
+    await this.photoService.savePicture(capturedPhoto);
+    this.photos = this.photoService.getPhotos(); // Update the photos array after selecting a new photo
+  }
+
   async presentPhotoOptions(photo: UserPhoto, index: number) {
     const actionSheet = await this.actionSheetController.create({
       header: 'Photo Options',
@@ -85,6 +97,13 @@ export class Tab2Page implements OnInit {
           icon: 'trash',
           handler: () => {
             this.deletePhoto(photo, index);
+          }
+        },
+        {
+          text: 'Select Existing Photo',
+          icon: 'images',
+          handler: () => {
+            this.selectExistingPhoto();
           }
         },
         {
