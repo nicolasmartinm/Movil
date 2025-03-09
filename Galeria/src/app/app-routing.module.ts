@@ -13,15 +13,15 @@ const routes: Routes = [
   },
   {
     path: 'create',
-    loadChildren: () => import('./create/create.module').then( m => m.CreatePageModule)
+    loadChildren: () => import('./tab3/create/create.module').then( m => m.CreatePageModule)
   },
   {
     path: 'detail',
-    loadChildren: () => import('./detail/detail.module').then( m => m.DetailPageModule)
+    loadChildren: () => import('./tab3/detail/detail.module').then( m => m.DetailPageModule)
   },
   {
     path: 'edit',
-    loadChildren: () => import('./edit/edit.module').then( m => m.EditPageModule)
+    loadChildren: () => import('./tab3/edit/edit.module').then( m => m.EditPageModule)
   },
 ];
 @NgModule({
