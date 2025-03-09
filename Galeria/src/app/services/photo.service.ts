@@ -42,14 +42,19 @@ export class PhotoService {
     });
   }
 
-  private async checkCameraPermissions(): Promise<PermissionStatus> {
-    const status = await Camera.checkPermissions();
-    console.log('Camera permissions:', status);
-    return status;
+  private async checkPermissions(): Promise<PermissionStatus> {
+    if (this.platform.is('hybrid')) {
+      const status = await Camera.requestPermissions();
+      console.log('Permissions:', status);
+      return status;
+    } else {
+      console.warn('Permissions check is not implemented on web.');
+      return { camera: 'granted', photos: 'granted' } as PermissionStatus;
+    }
   }
 
   public async addNewToGallery() {
-    const permissions = await this.checkCameraPermissions();
+    const permissions = await this.checkPermissions();
 
     if (permissions.camera === 'granted' && permissions.photos === 'granted') {
       const capturedPhoto = await Camera.getPhoto({
@@ -85,7 +90,7 @@ export class PhotoService {
   }
 
   public async addPhotoFromGallery() {
-    const permissions = await this.checkCameraPermissions();
+    const permissions = await this.checkPermissions();
 
     if (permissions.photos === 'granted') {
       const selectedPhoto = await Camera.getPhoto({

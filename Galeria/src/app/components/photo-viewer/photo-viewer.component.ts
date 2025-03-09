@@ -36,11 +36,11 @@ export class PhotoViewerComponent {
     return this.photos[this.currentIndex];
   }
 
-  addPhotoToGallery() {
-    this.photoService.addNewToGallery();
+  async addPhotoToGallery() {
+    await this.photoService.addNewToGallery();
   }
 
-  addPhotoFromGallery() {
-    this.photoService.addPhotoFromGallery();
+  async addPhotoFromGallery() {
+    await this.photoService.addPhotoFromGallery();
   }
 }
