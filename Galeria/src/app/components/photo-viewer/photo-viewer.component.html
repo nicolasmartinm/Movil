@@ -1,0 +1,50 @@
+<ion-header>
+  <ion-toolbar>
+    <ion-buttons slot="start">
+      <ion-button (click)="close()">Close</ion-button>
+    </ion-buttons>
+    <ion-title>Photo Viewer</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content>
+  <div class="photo-container">
+    <ion-img [src]="currentPhoto.webviewPath"></ion-img>
+    <ion-button fill="clear" class="nav-button prev" (click)="prev()" [disabled]="currentIndex === 0">
+      <ion-icon name="arrow-back-circle"></ion-icon>
+    </ion-button>
+    <ion-button fill="clear" class="nav-button next" (click)="next()" [disabled]="currentIndex === photos.length - 1">
+      <ion-icon name="arrow-forward-circle"></ion-icon>
+    </ion-button>
+  </div>
+</ion-content>
+
+<style>
+.photo-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+}
+
+ion-img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.prev {
+  left: 10px;
+}
+
+.next {
+  right: 10px;
+}
+</style>

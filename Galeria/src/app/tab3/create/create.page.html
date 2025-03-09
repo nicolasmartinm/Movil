@@ -1,21 +1,19 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
-    </ion-buttons>
     <ion-title>Create Info</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content padding>
+<ion-content>
   <form [formGroup]="infoForm">
     <ion-item>
-      <ion-input type="text" label="Info Title" labelPlacement="floating" formControlName="info_title"></ion-input>
+      <ion-label position="floating">Title</ion-label>
+      <ion-input formControlName="title"></ion-input>
     </ion-item>
     <ion-item>
-      <ion-input type="text" label="Info Description" labelPlacement="floating" formControlName="info_description"></ion-input>
+      <ion-label position="floating">Description</ion-label>
+      <ion-textarea formControlName="description"></ion-textarea>
     </ion-item>
-    <ion-button shape="round" color="primary" expand="block" [disabled]="!infoForm.valid"
-      (click)="saveInfo()">Save</ion-button>
+    <ion-button shape="round" color="primary" expand="block" [disabled]="!infoForm.valid" (click)="saveInfo()">Save</ion-button>
   </form>
 </ion-content>

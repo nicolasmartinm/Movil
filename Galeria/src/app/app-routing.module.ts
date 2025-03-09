@@ -13,21 +13,22 @@ const routes: Routes = [
   },
   {
     path: 'create',
-    loadChildren: () => import('./tab3/create/create.module').then( m => m.CreatePageModule)
+    loadChildren: () => import('./tab3/create/create.module').then(m => m.CreatePageModule)
   },
   {
-    path: 'detail',
-    loadChildren: () => import('./tab3/detail/detail.module').then( m => m.DetailPageModule)
+    path: 'detail/:id',
+    loadChildren: () => import('./tab3/detail/detail.module').then(m => m.DetailPageModule)
   },
   {
-    path: 'edit',
-    loadChildren: () => import('./tab3/edit/edit.module').then( m => m.EditPageModule)
+    path: 'edit/:id',
+    loadChildren: () => import('./tab3/edit/edit.module').then(m => m.EditPageModule)
   },
 ];
+
 @NgModule({
   imports: [
     RouterModule.forRoot(routes, { preloadingStrategy: PreloadAllModules })
   ],
   exports: [RouterModule]
 })
-export class AppRoutingModule {}
+export class AppRoutingModule { }

@@ -1,25 +1,36 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
     <ion-buttons slot="start">
-      <ion-back-button defaultHref="/tab3"></ion-back-button>
+      <ion-back-button defaultHref="/tabs/tab3"></ion-back-button>
     </ion-buttons>
-    <ion-title>Info Details</ion-title>
+    <ion-title>
+      <div *ngIf="!isEditingTitle" (dblclick)="enableEditTitle()">{{ title }}</div>
+      <ion-input *ngIf="isEditingTitle" [(ngModel)]="title" (blur)="saveTitle()" (keyup.enter)="saveTitle()" autofocus></ion-input>
+    </ion-title>
   </ion-toolbar>
 </ion-header>
 
 <ion-content>
   <ion-card>
+    <!-- <ion-card-header>
+      <ion-card-title>
+        <div *ngIf="!isEditingTitle" (dblclick)="enableEditTitle()">{{ title }}</div>
+        <ion-input *ngIf="isEditingTitle" [(ngModel)]="title" (blur)="saveTitle()" autofocus></ion-input>
+      </ion-card-title>
+    </ion-card-header> -->
     <ion-card-content>
-      <ion-card-title>{{info.info_title}}</ion-card-title>
-      <p>{{info.info_description}}</p>
+      <div *ngIf="!isEditingDescription" (dblclick)="enableEditDescription()">{{ description }}</div>
+      <ion-textarea *ngIf="isEditingDescription" [(ngModel)]="description" (blur)="saveDescription()" (keyup.enter)="saveDescription()" autofocus></ion-textarea>
     </ion-card-content>
   </ion-card>
 
   <ion-grid>
     <ion-row>
-      <ion-col size="6" size-md="4" size-lg="3" *ngFor="let photo of getPhotosForList(info.id)">
+      <ion-col size="12" size-md="6" size-lg="4" *ngFor="let photo of photos; let i = index">
         <ion-card>
-          <ion-img [src]="photo.webviewPath" class="photo-img" (click)="showActionSheet(photo)"></ion-img>
+          <div class="photo-container" (click)="presentPhotoOptions(photo, i)">
+            <ion-img [src]="photo.webviewPath" class="photo-img"></ion-img>
+          </div>
         </ion-card>
       </ion-col>
     </ion-row>
@@ -27,11 +38,21 @@
 </ion-content>
 
 <style>
-.photo-img {
+.photo-container {
   width: 100%;
-  height: auto;
+  padding-top: 100%; /* Mantener la proporción cuadrada */
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.photo-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  margin-bottom: 10px; /* Espacio entre las fotos */
   border-radius: 10px; /* Bordes redondeados */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para las fotos */
 }

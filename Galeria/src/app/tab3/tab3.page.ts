@@ -102,7 +102,7 @@ export class Tab3Page implements OnInit {
   }
 
   addNewList() {
-    this.router.navigate(['/add-info']);
+    this.router.navigate(['/create']);
   }
 
   addInfo() {
@@ -110,7 +110,7 @@ export class Tab3Page implements OnInit {
   }
 
   editList(listId: string) {
-    this.router.navigate(['/edit-info', listId]);
+    this.router.navigate(['/edit', listId]);
   }
 
   async selectPhoto(photo: UserPhoto) {

@@ -1,24 +1,36 @@
-import { Component } from '@angular/core';
-import { ActionSheetController, AlertController, IonicModule } from '@ionic/angular';
+import { Component, OnInit } from '@angular/core';
+import { PhotoService, UserPhoto } from '../services/photo.service';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { PhotoService, UserPhoto } from '../services/photo.service';
+import { IonicModule, AlertController, ActionSheetController, ModalController } from '@ionic/angular';
+import { PhotoViewerComponent } from '../components/photo-viewer/photo-viewer.component';
 import { getDatabase, onValue, ref } from 'firebase/database';
-import { Preferences } from '@capacitor/preferences';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-tab2',
-  templateUrl: 'tab2.page.html',
-  styleUrls: ['tab2.page.scss'],
+  templateUrl: './tab2.page.html',
+  styleUrls: ['./tab2.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule]
+  imports: [CommonModule, FormsModule, IonicModule, PhotoViewerComponent]
 })
-export class Tab2Page {
-  public lists: { id: string, name: string }[] = [];
+export class Tab2Page implements OnInit {
+  public lists: { id: string, name: string, description: string }[] = [];
   public isGridView: boolean = true;
+  photos: UserPhoto[] = [];
 
-  constructor(public photoService: PhotoService, public actionSheetController: ActionSheetController, private alertController: AlertController) {
+  constructor(
+    private photoService: PhotoService,
+    private alertController: AlertController,
+    private actionSheetController: ActionSheetController,
+    private modalController: ModalController,
+    private router: Router
+  ) {
     this.loadLists();
+  }
+
+  ngOnInit() {
+    this.loadPhotos();
   }
 
   loadLists() {
@@ -29,7 +41,8 @@ export class Tab2Page {
       snapshot.forEach((childSnapshot) => {
         this.lists.push({
           id: childSnapshot.key,
-          name: childSnapshot.val().info_title // Use info_title as the name
+          name: childSnapshot.val().info_title,
+          description: childSnapshot.val().info_description
         });
       });
       console.log('Lists loaded in Tab2:', this.lists); // Debugging line
@@ -38,16 +51,30 @@ export class Tab2Page {
     });
   }
 
-  async addPhotoToGallery() {
-    await this.photoService.addNewToGallery();
+  async loadPhotos() {
+    await this.photoService.loadSaved();
+    this.photos = this.photoService.getPhotos();
   }
 
-  async showActionSheet(photo: UserPhoto) {
+  async addPhotoToGallery() {
+    await this.photoService.addNewToGallery();
+    this.photos = this.photoService.getPhotos(); // Update the photos array after adding a new photo
+  }
+
+  async presentPhotoOptions(photo: UserPhoto, index: number) {
     const actionSheet = await this.actionSheetController.create({
       header: 'Photo Options',
       buttons: [
         {
+          text: 'View',
+          icon: 'eye',
+          handler: () => {
+            this.viewPhoto(index);
+          }
+        },
+        {
           text: 'Add to List',
+          icon: 'add',
           handler: () => {
             this.selectPhoto(photo);
           }
@@ -57,16 +84,56 @@ export class Tab2Page {
           role: 'destructive',
           icon: 'trash',
           handler: () => {
-            this.deletePhoto(photo);
+            this.deletePhoto(photo, index);
           }
         },
         {
           text: 'Cancel',
-          role: 'cancel'
+          icon: 'close',
+          role: 'cancel',
+          handler: () => {
+            console.log('Cancel clicked');
+          }
         }
       ]
     });
     await actionSheet.present();
+  }
+
+  async viewPhoto(index: number) {
+    const modal = await this.modalController.create({
+      component: PhotoViewerComponent,
+      componentProps: {
+        photos: this.photos,
+        currentIndex: index
+      }
+    });
+    return await modal.present();
+  }
+
+  async deletePhoto(photo: UserPhoto, index: number) {
+    const alert = await this.alertController.create({
+      header: 'Confirm!',
+      message: 'Are you sure you want to delete this photo?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: () => {
+            console.log('Delete cancelled');
+          }
+        }, {
+          text: 'Okay',
+          handler: async () => {
+            await this.photoService.deletePicture(photo, index);
+            this.photos = this.photoService.getPhotos();
+          }
+        }
+      ]
+    });
+
+    await alert.present();
   }
 
   async selectPhoto(photo: UserPhoto) {
@@ -93,13 +160,9 @@ export class Tab2Page {
           handler: (listId: string) => {
             const selectedList = this.lists.find((list: { id: string, name: string }) => list.id === listId);
             if (selectedList) {
-              if (!this.photoService.selectedListPhotos[listId]) {
-                this.photoService.selectedListPhotos[listId] = [];
-              }
-              this.photoService.selectedListPhotos[listId].push(photo);
-              this.photoService.saveListPhotos();
+              this.photoService.addPhotoToList(photo, listId);
               console.log('Photo added to list:', selectedList.name); // Debugging line
-              console.log('Current photos in list:', this.photoService.selectedListPhotos[listId]); // Debugging line
+              console.log('Current photos in list:', this.photoService.getPhotosForList(listId)); // Debugging line
             }
           }
         }
@@ -109,14 +172,7 @@ export class Tab2Page {
     await alert.present();
   }
 
-  deletePhoto(photo: UserPhoto) {
-    const photoIndex = this.photoService.photos.indexOf(photo);
-    if (photoIndex > -1) {
-      this.photoService.photos.splice(photoIndex, 1);
-      Preferences.set({
-        key: this.photoService.getPhotoStorageKey(),
-        value: JSON.stringify(this.photoService.photos)
-      });
-    }
+  navigateToDetail(id: string) {
+    this.router.navigate(['/detail', id]);
   }
 }

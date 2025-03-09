@@ -3,7 +3,7 @@ import { Preferences } from '@capacitor/preferences';
 import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Platform } from '@ionic/angular';
-import { getDatabase, onValue, ref, set } from 'firebase/database';
+import { getDatabase, onValue, ref } from 'firebase/database';
 
 export interface UserPhoto {
   filepath: string;
@@ -52,10 +52,24 @@ export class PhotoService {
     const savedImageFile = await this.savePicture(capturedPhoto);
     this.photos.unshift(savedImageFile);
 
-    Preferences.set({
-      key: this.PHOTO_STORAGE,
-      value: JSON.stringify(this.photos),
-    });
+    try {
+      await Preferences.set({
+        key: this.PHOTO_STORAGE,
+        value: JSON.stringify(this.photos),
+      });
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'QuotaExceededError') {
+        // Clear storage and try again
+        await this.clearStorage();
+        this.photos.unshift(savedImageFile);
+        await Preferences.set({
+          key: this.PHOTO_STORAGE,
+          value: JSON.stringify(this.photos),
+        });
+      } else {
+        throw e;
+      }
+    }
   }
 
   private async savePicture(photo: Photo) {
@@ -119,19 +133,31 @@ export class PhotoService {
     localStorage.setItem(this.LIST_PHOTOS_STORAGE, JSON.stringify(this.selectedListPhotos));
   }
 
-  public async deletePicture(photo: UserPhoto, position: number) {
-    this.photos.splice(position, 1);
-
-    Preferences.set({
+  public async deletePicture(photo: UserPhoto, index: number) {
+    this.photos.splice(index, 1);
+    await Preferences.set({
       key: this.PHOTO_STORAGE,
-      value: JSON.stringify(this.photos)
+      value: JSON.stringify(this.photos),
     });
 
-    const filename = photo.filepath.slice(photo.filepath.lastIndexOf('/') + 1);
+    // Delete the photo file from the filesystem
     await Filesystem.deleteFile({
-      path: filename,
+      path: photo.filepath,
       directory: Directory.Data
     });
+
+    // Remove the photo from all lists
+    for (const listId in this.selectedListPhotos) {
+      this.selectedListPhotos[listId] = this.selectedListPhotos[listId].filter(p => p.filepath !== photo.filepath);
+    }
+    await this.saveListPhotos();
+  }
+
+  public async deletePhotoFromList(photo: UserPhoto, listId: string) {
+    if (this.selectedListPhotos[listId]) {
+      this.selectedListPhotos[listId] = this.selectedListPhotos[listId].filter(p => p.filepath !== photo.filepath);
+      await this.saveListPhotos();
+    }
   }
 
   public async addPhotoToList(photo: UserPhoto, listId: string) {
@@ -142,7 +168,21 @@ export class PhotoService {
     await this.saveListPhotos();
   }
 
+  public getPhotosForList(listId: string): UserPhoto[] {
+    return this.selectedListPhotos[listId] || [];
+  }
+
   public getPhotoStorageKey(): string {
     return this.PHOTO_STORAGE;
+  }
+
+  getPhotos(): UserPhoto[] {
+    return this.photos;
+  }
+
+  private async clearStorage() {
+    await Preferences.clear();
+    this.photos = [];
+    this.selectedListPhotos = {};
   }
 }

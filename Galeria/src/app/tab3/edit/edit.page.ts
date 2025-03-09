@@ -1,62 +1,76 @@
 import { Component, OnInit } from '@angular/core';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { FormBuilder, Validators } from '@angular/forms';
-import { DataSnapshot, getDatabase, onValue, ref, set } from "firebase/database";
-
-const db = getDatabase();
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { IonicModule } from '@ionic/angular';
+import { PhotoService, UserPhoto } from '../../services/photo.service';
+import { getDatabase, ref, onValue, update } from 'firebase/database';
 
 @Component({
   selector: 'app-edit',
   templateUrl: './edit.page.html',
   styleUrls: ['./edit.page.scss'],
-  standalone: false, 
+  standalone: true,
+  imports: [CommonModule, FormsModule, IonicModule, ReactiveFormsModule]
 })
 export class EditPage implements OnInit {
-
-  info: any = {};
-
-  infoForm = this.formBuilder.group({
-    info_title: [null, Validators.required],
-    info_description: [null, Validators.required]
-  });
-
-  
+  infoForm: FormGroup;
+  itemId: string | null = null;
 
   constructor(
+    private fb: FormBuilder,
     private route: ActivatedRoute,
     private router: Router,
-    private formBuilder: FormBuilder
-  ) { 
-    
-    this.getInfo();
-  }
-  getInfo() {
-    const infoRef = ref(db, 'infos/' + this.route.snapshot.paramMap.get('id'));
-    onValue(infoRef, (snapshot) => {
-      this.info = snapshotToObject(snapshot);
-      this.infoForm.controls['info_title'].setValue(this.info.info_title);
-      this.infoForm.controls['info_description'].setValue(this.info.info_description);
+    private photoService: PhotoService
+  ) {
+    this.infoForm = this.fb.group({
+      title: ['', Validators.required],
+      description: ['', Validators.required]
     });
   }
-  updateInfo() {
-    set(ref(db, 'infos/' + this.route.snapshot.paramMap.get('id')), this.infoForm.value)
-      .then(() => {
-        this.router.navigate(['/detail', { id: this.route.snapshot.paramMap.get('id') }]);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }
-
-  
 
   ngOnInit() {
+    this.itemId = this.route.snapshot.paramMap.get('id');
+    if (this.itemId) {
+      this.loadItemDetails(this.itemId);
+    }
   }
 
-}
-export const snapshotToObject = (snapshot: DataSnapshot) => {
-  let item = snapshot.val();
-  item.key = snapshot.key;
+  loadItemDetails(itemId: string) {
+    const db = getDatabase();
+    const itemRef = ref(db, `infos/${itemId}`);
+    onValue(itemRef, (snapshot) => {
+      const item = snapshot.val();
+      if (item) {
+        this.infoForm.patchValue({
+          title: item.info_title,
+          description: item.info_description
+        });
+      }
+    });
+  }
 
-  return item;
+  getPhotosForList(listId: string | null): UserPhoto[] {
+    if (!listId) return [];
+    const photos = this.photoService.selectedListPhotos[listId] || [];
+    console.log(`Photos for list ${listId}:`, photos);
+    return photos;
+  }
+
+  saveInfo() {
+    if (this.infoForm.valid && this.itemId) {
+      const db = getDatabase();
+      const itemRef = ref(db, `infos/${this.itemId}`);
+      update(itemRef, {
+        info_title: this.infoForm.value.title,
+        info_description: this.infoForm.value.description
+      }).then(() => {
+        console.log('Info updated:', this.infoForm.value);
+        this.router.navigate(['/tabs/tab3']);
+      }).catch((error) => {
+        console.error('Error updating info:', error);
+      });
+    }
+  }
 }

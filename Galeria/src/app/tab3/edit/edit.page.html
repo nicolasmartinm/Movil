@@ -1,21 +1,50 @@
 <ion-header [translucent]="true">
   <ion-toolbar>
-    <ion-buttons slot="start">
-      <ion-back-button></ion-back-button>
-    </ion-buttons>
     <ion-title>Edit Info</ion-title>
   </ion-toolbar>
 </ion-header>
 
-<ion-content padding>
+<ion-content>
   <form [formGroup]="infoForm">
     <ion-item>
-      <ion-input type="text" label="Info Title" labelPlacement="floating" formControlName="info_title"></ion-input>
+      <ion-label position="floating">Title</ion-label>
+      <ion-input formControlName="title"></ion-input>
     </ion-item>
     <ion-item>
-      <ion-input type="text" label="Info Description" labelPlacement="floating" formControlName="info_description"></ion-input>
+      <ion-label position="floating">Description</ion-label>
+      <ion-textarea formControlName="description"></ion-textarea>
     </ion-item>
-    <ion-button shape="round" color="primary" expand="block" [disabled]="!infoForm.valid"
-      (click)="updateInfo()">Update</ion-button>
+    <div class="photo-grid">
+      <div class="photo-container" *ngFor="let photo of getPhotosForList(itemId)">
+        <ion-img [src]="photo.webviewPath" class="photo-img"></ion-img>
+      </div>
+    </div>
+    <ion-button shape="round" color="primary" expand="block" [disabled]="!infoForm.valid" (click)="saveInfo()">Save</ion-button>
   </form>
 </ion-content>
+
+<style>
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 10px;
+}
+
+.photo-container {
+  width: 100%;
+  padding-top: 100%; /* Mantener la proporción cuadrada */
+  position: relative;
+  overflow: hidden;
+}
+
+.photo-img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px; /* Bordes redondeados */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Sombra para las fotos */
+}
+</style>
